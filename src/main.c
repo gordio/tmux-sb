@@ -4,10 +4,17 @@
  * Licensed: MIT
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <err.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/sysinfo.h>
+
+#include "server.h"
+#include "main.h"
 
 
 inline FILE *
@@ -26,6 +33,7 @@ open_file(char *name)
 
 int main(int argc, const char *argv[], const char *envp[])
 {
+	/*
 	// CPU
 	long double a[4], b[4], cpuLoad;
 	FILE *cpu_fd = open_file("/proc/stat");
@@ -78,5 +86,31 @@ int main(int argc, const char *argv[], const char *envp[])
 
 	fclose(ram_fd);
 	fclose(cpu_fd);
+	*/
+
+	struct stat file_stat;
+
+	
+	if (chdir("/tmp/")) {
+		errx(1, "Can't change directory to /tmp");
+	}
+
+	if (stat(SOCKET_NAME, &file_stat) == -1) {
+		err(1, "Server created;");
+	}
+
+	pid_t pid;
+
+
+	pid = fork();
+	if (pid < 0) {
+		errx(1, "Fork error.");
+	}
+
+	if (pid == 0) {
+		start_server();
+	} else {
+	}
+
 	return 0;
 }

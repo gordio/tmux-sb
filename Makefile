@@ -15,6 +15,7 @@ CFLAGS += -O2 -std=c99
 CFLAGS += -Isrc
 CFLAGS += -g -Wall -Wextra -pedantic
 CFLAGS += -DVERSION=\"$(VERSION)\"
+#LDFLAGS += "-lc"
 
 
 .SUFFIXES: .c .h .o
@@ -24,7 +25,7 @@ all: $(PROJNAME)
 
 $(PROJNAME): $(OBJECTS)
 	@echo -e "\033[1;32m LINK\033[0m" ${PROJNAME}
-	@$(CC) -o ${PROJNAME} $(OBJECTS)
+	@$(LD) $(LDFLAGS) -o ${PROJNAME} $(OBJECTS)
 
 %.o: %.c %.h
 	@echo -e "\033[1m   CC\033[0m $< -> $@"
