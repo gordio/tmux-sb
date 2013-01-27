@@ -11,7 +11,7 @@ _ver1   := $(shell git describe --tags HEAD 2>/dev/null)
 _ver2   := $(shell git rev-parse --verify --short HEAD 2>/dev/null)
 VERSION := $(or $(_ver0),$(_ver1),$(_ver2))
 
-CFLAGS += -O2 -std=c99
+CFLAGS += -O2 -std=gnu99
 CFLAGS += -Isrc
 CFLAGS += -g -Wall -Wextra -pedantic
 CFLAGS += -DVERSION=\"$(VERSION)\"
