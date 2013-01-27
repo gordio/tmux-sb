@@ -15,32 +15,32 @@ CFLAGS += -O2 -std=c99
 CFLAGS += -Isrc
 CFLAGS += -g -Wall -Wextra -pedantic
 CFLAGS += -DVERSION=\"$(VERSION)\"
-#LDFLAGS += "-lc"
+#LDFLAGS += -L`gcc -print-file-name=` -lc -lgcc
 
 
 .SUFFIXES: .c .h .o
-.PHONY: all clear clean install uninstall types
+.PHONY: all clear clean install uninstall
 
 all: $(PROJNAME)
 
 $(PROJNAME): $(OBJECTS)
-	@echo -e "\033[1;32m LINK\033[0m" ${PROJNAME}
-	@$(LD) $(LDFLAGS) -o ${PROJNAME} $(OBJECTS)
+	@echo -e "\033[1;32m LINK\033[0m ${PROJNAME}"
+	@$(CC) $(LDFLAGS) -o ${PROJNAME} $(OBJECTS)
 
 %.o: %.c %.h
 	@echo -e "\033[1m   CC\033[0m $< -> $@"
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
-clear:
+clean:
 	@echo -e "\033[1;31m   RM\033[0m" $(OBJECTS)
 	@rm -f $(OBJECTS)
 
-clean: clear
+clear: clean
 	@echo -e "\033[1;31m   RM\033[0m" "${PROJNAME}"
 	@rm -f ${PROJNAME}
 
 install: all
-	install -m 755 ${PROJNAME} "${PREFIX}/bin/"
+	install -m 755 ${PROJNAME} "$(PRFIX)/bin/"
 
 uninstall: all
 	rm "$(PREFIX)/bin/$(PROJNAME)"

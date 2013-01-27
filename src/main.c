@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include <err.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -14,6 +15,7 @@
 #include <sys/sysinfo.h>
 
 #include "server.h"
+#include "client.h"
 #include "main.h"
 
 
@@ -24,7 +26,7 @@ open_file(char *name)
 
 	fd = fopen(name, "r");
 	if (!fd) {
-		fprintf(stderr, "Failed to open file '%s'", name);
+		err(1, "Failed to open file '%s'", name);
 		exit(EXIT_FAILURE);
 	}
 
@@ -88,29 +90,33 @@ int main(int argc, const char *argv[], const char *envp[])
 	fclose(cpu_fd);
 	*/
 
-	struct stat file_stat;
+	bool server_runned = false;
+	pid_t pid = -1;
 
-	
 	if (chdir("/tmp/")) {
 		errx(1, "Can't change directory to /tmp");
 	}
 
-	if (stat(SOCKET_NAME, &file_stat) == -1) {
-		err(1, "Server created;");
+	// Check sfdet exist
+	struct stat file_stat;
+	if (stat("/tmp/" SOCKET_NAME, &file_stat) == 0) {
+		server_runned = true;
 	}
 
-	pid_t pid;
 
+	// Run server if don't exist
+	if (!server_runned) {
+		pid = fork();
+		if (pid < 0) {
+			errx(1, "Fork error.");
+		}
 
-	pid = fork();
-	if (pid < 0) {
-		errx(1, "Fork error.");
+		if (pid == 0) {
+			start_server(1, SOCKET_NAME);
+		}
 	}
 
-	if (pid == 0) {
-		start_server();
-	} else {
-	}
+	client();
 
 	return 0;
 }
