@@ -40,7 +40,7 @@ clear: clean
 	@rm -f ${PROJNAME}
 
 install: all
-	install -m 755 ${PROJNAME} "$(PRFIX)/bin/"
+	install -m 755 ${PROJNAME} "$(PREFIX)/bin/"
 
 uninstall: all
 	rm "$(PREFIX)/bin/$(PROJNAME)"
