@@ -12,26 +12,12 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/sysinfo.h>
 
 #include "server.h"
 #include "client.h"
 #include "main.h"
 
 
-inline FILE *
-open_file(char *name)
-{
-	FILE *fd = NULL;
-
-	fd = fopen(name, "r");
-	if (!fd) {
-		err(1, "Failed to open file '%s'", name);
-		exit(EXIT_FAILURE);
-	}
-
-	return fd;
-}
 
 int main(int argc, const char *argv[], const char *envp[])
 {
@@ -54,40 +40,6 @@ int main(int argc, const char *argv[], const char *envp[])
 	// find delta and find prc
 	cpuLoad = ((b[0]+b[1]+b[2]) - (a[0]+a[1]+a[2])) / ((b[0]+b[1]+b[2]+b[3]) - (a[0]+a[1]+a[2]+a[3]));
 	cpuLoad *= 100;
-
-
-	struct sysinfo sysInfo;
-	sysinfo(&sysInfo);
-
-	// MEM
-	unsigned int memTotal, memFree, memBuffed, memCached, memPrc;
-	FILE *ram_fd = open_file("/proc/meminfo");
-
-	fscanf(ram_fd, "MemTotal: %u kB\n", &memTotal);
-	fscanf(ram_fd, "MemFree: %u kB\n", &memFree);
-	fscanf(ram_fd, "Buffers: %u kB\n", &memBuffed);
-	fscanf(ram_fd, "Cached: %u kB\n", &memCached);
-
-	memPrc = (memFree + memCached) / (memTotal / 100);
-
-	// SWAP
-	unsigned long swpFree, swpTotal, swpPrc;
-
-	swpTotal = sysInfo.totalswap * sysInfo.mem_unit;
-	swpFree = sysInfo.freeswap * sysInfo.mem_unit;
-	if (swpTotal != 0) {
-		swpPrc = swpFree / (swpTotal / 100);
-
-		printf("CPU:%3.Lf%% #[fg=green]|#[fg=default] MEM:%3.0i%% SWAP:%2.1lu%%",
-				cpuLoad, 100 - memPrc, 100 - swpPrc);
-	} else {
-		printf("CPU:%3.Lf%% #[fg=green]|#[fg=default] MEM:%3.0i%%",
-				cpuLoad, 100 - memPrc);
-	}
-
-
-	fclose(ram_fd);
-	fclose(cpu_fd);
 	*/
 
 	bool server_runned = false;
