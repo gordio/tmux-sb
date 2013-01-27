@@ -21,7 +21,7 @@ inline static FILE * open_file(char *name);
 
 
 void
-start_server(const int update_interval, const char *file)
+start_server(const char *file)
 {
 	int sock, csock;
 	struct sockaddr_un addr;
@@ -29,14 +29,15 @@ start_server(const int update_interval, const char *file)
 	socklen_t addr_len;
 
 	// mem
-	FILE *ram_fd;
+	FILE *ram_fd = NULL;
 	unsigned int memTotal, memFree, memBuffed, memCached, memPrc;
 	// swap
 	struct sysinfo sysInfo;
 	unsigned long swpFree, swpTotal, swpPrc;
 	// cpu
-	FILE *cpu_fd;
-	long double a[4], b[4], cpuLoad = 0;
+	FILE *cpu_fd = NULL;
+	unsigned long int a[9], b[9], work_over_period, total_over_period;
+	unsigned int cpu_prc = 0;
 
 
 	if (!(buf = malloc(BUF_SIZE))) {
@@ -49,7 +50,20 @@ start_server(const int update_interval, const char *file)
 	sock = init_sock(&addr);
 
 	ram_fd = open_file("/proc/meminfo");
+	cpu_fd = open_file("/proc/stat");
 
+	// fix empty
+	if (7 != fscanf(cpu_fd, "cpu  %lu %lu %lu %lu %lu %lu %lu", &b[0], &b[1], &b[2], &b[3], &b[4], &b[5], &b[6])) {
+		errx(1, "Fail parse cpu stat.");
+	} else {
+		// work (user + nice + system)
+		b[7] = b[0] + b[1] + b[2];
+		// total
+		b[8] = b[7] + b[3] + b[4] + b[5] + b[6];
+	}
+	rewind(cpu_fd);
+	setbuf(cpu_fd, NULL);
+	
 
 	while (true) {
 		addr_len = sizeof addr;
@@ -59,6 +73,25 @@ start_server(const int update_interval, const char *file)
 			errx(1, "Accept error %i: %s", errno, strerror(errno));
 		}
 
+		// cpu
+		if (7 != fscanf(cpu_fd, "cpu  %lu %lu %lu %lu %lu %lu %lu", &a[0], &a[1], &a[2], &a[3], &a[4], &a[5], &a[6])) {
+			errx(1, "Fail parse cpu stat.");
+		}
+		// work (user + nice + system)
+		a[7] = a[0] + a[1] + a[2];
+		// total
+		a[8] = a[7] + a[3] + a[4] + a[5] + a[6];
+		// periods
+		work_over_period = b[7] - a[7];
+		total_over_period = b[8] - a[8];
+		cpu_prc = ((float)work_over_period / total_over_period) * 100;
+		// a -> b
+		memcpy(b, a, sizeof a / sizeof a[0]);
+
+		// reset fd
+		rewind(cpu_fd);
+		setbuf(cpu_fd, NULL);
+
 		// memory
 		if (1 != fscanf(ram_fd, "MemTotal: %u kB\n", &memTotal) ||
 			1 != fscanf(ram_fd, "MemFree: %u kB\n", &memFree) ||
@@ -67,22 +100,26 @@ start_server(const int update_interval, const char *file)
 			errx(-1, "Fail parse mem file.");
 		}
 		memPrc = (memFree + memCached) / (memTotal / 100);
+
 		rewind(ram_fd);
 		setbuf(ram_fd, NULL);
 
 		// swap
 		sysinfo(&sysInfo);
-		swpTotal = sysInfo.totalswap * sysInfo.mem_unit;
-		swpFree = sysInfo.freeswap * sysInfo.mem_unit;
 
-		if (swpTotal != 0) {
+		// if swap exist (exclude divide by zero)
+		if (sysInfo.totalswap != 0) {
+			swpTotal = sysInfo.totalswap * sysInfo.mem_unit;
+			swpFree = sysInfo.freeswap * sysInfo.mem_unit;
 			swpPrc = swpFree / (swpTotal / 100);
 
-			snprintf(buf, BUF_SIZE - 1, "CPU:%3.Lf%% #[fg=green]|#[fg=default] MEM:%3.0i%% SWAP:%2.1lu%%",
-					cpuLoad, 100 - memPrc, 100 - swpPrc);
+			snprintf(buf, BUF_SIZE - 1,
+					"CPU:%3.u%% #[fg=green]|#[fg=default] MEM:%3.0i%% SWAP:%2.1lu%%",
+					cpu_prc, 100 - memPrc, 100 - swpPrc);
 		} else {
-			snprintf(buf, BUF_SIZE - 1, "CPU:%3.Lf%% #[fg=green]|#[fg=default] MEM:%3.0i%%",
-					cpuLoad, 100 - memPrc);
+			snprintf(buf, BUF_SIZE - 1,
+					"CPU:%3.u%% #[fg=green]|#[fg=default] MEM:%3.0i%%",
+					cpu_prc, 100 - memPrc);
 		}
 
 		buf[BUF_SIZE - 1] = '\0'; // hard deny overflow
@@ -91,6 +128,7 @@ start_server(const int update_interval, const char *file)
 
 	deinit_sock(sock, &addr);
 
+	fclose(cpu_fd);
 	fclose(ram_fd);
 }
 
@@ -129,6 +167,7 @@ inline static FILE *
 open_file(char *name)
 {
 	FILE *fd = NULL;
+
 
 	if (!(fd = fopen(name, "r"))) {
 		errx(1, "Failed to open file '%s': %s", name, strerror(errno));

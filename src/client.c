@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
+#include <sys/types.h> // with sys/socket.h for cross
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <err.h>
@@ -22,7 +22,7 @@ client(void)
 	if (!(buf = malloc(BUF_SIZE))) {
 		errx(-2, "Can't alloc buffer: %s", strerror(errno));
 	}
-	
+
 	if (-1 == (sock = socket(AF_UNIX, SOCK_STREAM, 0))) {
 		errx(-2, "Can't create socket: %s", strerror(errno));
 	}
@@ -35,7 +35,7 @@ client(void)
 	while (cur_retr < CLIENT_RET_COUNT) {
 		if (-1 == connect(sock, (struct sockaddr *) &addr, sizeof addr)) {
 			if (cur_retr < CLIENT_RET_COUNT) {
-				// have retry count available - only show error
+				// have retry count - only show error
 				fprintf(stderr, "Can't connect. Retry %i/%i\n", cur_retr + 1, CLIENT_RET_COUNT);
 			} else {
 				// error, exit
@@ -52,6 +52,7 @@ client(void)
 
 	int len;
 	len = recv(sock, buf, BUF_SIZE - 1, 0);
+	close(sock);
 
 	buf[BUF_SIZE - 1] = '\0'; // hard deny overflow
 	printf("%s\n", buf);

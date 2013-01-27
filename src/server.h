@@ -3,6 +3,6 @@
 
 #define LISTEN_BACKLOG 5
 
-void start_server(const int update_interval, const char *file);
+void start_server(const char *file);
 
 #endif

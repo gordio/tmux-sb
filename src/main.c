@@ -64,7 +64,7 @@ int main(int argc, const char *argv[], const char *envp[])
 		}
 
 		if (pid == 0) {
-			start_server(1, SOCKET_NAME);
+			start_server(SOCKET_NAME);
 		}
 	}
 
