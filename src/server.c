@@ -84,8 +84,7 @@ start_server(const char *file)
 		// periods
 		work_over_period = a[7] - b[7];
 		total_over_period = a[8] - b[8];
-		cpu_prc = ((double)work_over_period / total_over_period) * 100.0;
-		printf("work: %lu / total %lu = %i\n", work_over_period, total_over_period, cpu_prc);
+		cpu_prc = ((float)work_over_period / total_over_period) * 100.0;
 		// a -> b
 		memcpy(b, a, sizeof a[0] * 9);
 
