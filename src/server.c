@@ -15,6 +15,15 @@
 #include "main.h"
 #include "server.h"
 
+
+#ifndef MIN
+	#define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
+#ifndef MAX
+	#define MAX(a,b) ((a)>(b)?(a):(b))
+#endif
+
+
 static int init_sock(struct sockaddr_un *addr);
 static void deinit_sock(int sock, struct sockaddr_un *addr);
 inline static FILE * open_file(char *name);
@@ -37,7 +46,7 @@ start_server(const char *file)
 	// cpu
 	FILE *cpu_fd = NULL;
 	unsigned long int a[9], b[9], work_over_period, total_over_period;
-	unsigned int cpu_prc = 0;
+	int cpu_prc = 0;
 
 
 	if (!(buf = malloc(BUF_SIZE))) {
@@ -85,6 +94,8 @@ start_server(const char *file)
 		work_over_period = a[7] - b[7];
 		total_over_period = a[8] - b[8];
 		cpu_prc = ((float)work_over_period / total_over_period) * 100.0;
+		// min/max value
+		cpu_prc = MIN(100, MAX(0, cpu_prc));
 		// a -> b
 		memcpy(b, a, sizeof a[0] * 9);
 
