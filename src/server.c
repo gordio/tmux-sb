@@ -73,7 +73,7 @@ start_server(const char *file)
 			errx(1, "Accept error %i: %s", errno, strerror(errno));
 		}
 
-		// cpu
+		// cpu  nice user system irq soft_irq io_wait steal guest
 		if (7 != fscanf(cpu_fd, "cpu  %lu %lu %lu %lu %lu %lu %lu", &a[0], &a[1], &a[2], &a[3], &a[4], &a[5], &a[6])) {
 			errx(1, "Fail parse cpu stat.");
 		}
@@ -82,11 +82,12 @@ start_server(const char *file)
 		// total
 		a[8] = a[7] + a[3] + a[4] + a[5] + a[6];
 		// periods
-		work_over_period = b[7] - a[7];
-		total_over_period = b[8] - a[8];
-		cpu_prc = ((float)work_over_period / total_over_period) * 100;
+		work_over_period = a[7] - b[7];
+		total_over_period = a[8] - b[8];
+		cpu_prc = ((double)work_over_period / total_over_period) * 100.0;
+		printf("work: %lu / total %lu = %i\n", work_over_period, total_over_period, cpu_prc);
 		// a -> b
-		memcpy(b, a, sizeof a / sizeof a[0]);
+		memcpy(b, a, sizeof a[0] * 9);
 
 		// reset fd
 		rewind(cpu_fd);
