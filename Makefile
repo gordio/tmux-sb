@@ -13,7 +13,7 @@ VERSION := $(or $(_ver0),$(_ver1),$(_ver2))
 
 CFLAGS += -O2 -std=gnu99
 CFLAGS += -Isrc
-CFLAGS += -g -Wall -Wextra -pedantic
+CFLAGS += -Wall -Wextra -pedantic
 CFLAGS += -DVERSION=\"$(VERSION)\"
 #LDFLAGS += -L`gcc -print-file-name=` -lc -lgcc
 
@@ -22,6 +22,9 @@ CFLAGS += -DVERSION=\"$(VERSION)\"
 .PHONY: all clear clean install uninstall
 
 all: $(PROJNAME)
+
+debug: clean
+	@CFLAGS+=-g make
 
 $(PROJNAME): $(OBJECTS)
 	@echo -e "\033[1;32m LINK\033[0m ${PROJNAME}"

@@ -29,7 +29,7 @@ client(void)
 
 	// init socket addr
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, SOCKET_NAME, sizeof addr.sun_path);
+	strncpy(addr.sun_path, SOCKET_NAME, (sizeof addr.sun_path) - 1);
 
 	int cur_retr = 0;
 	while (cur_retr < CLIENT_RET_COUNT) {

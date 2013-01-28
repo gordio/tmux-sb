@@ -97,7 +97,7 @@ start_server(const char *file)
 		// min/max value
 		cpu_prc = MIN(100, MAX(0, cpu_prc));
 		// a -> b
-		memcpy(b, a, sizeof a[0] * 9);
+		memcpy(b, a, sizeof b);
 
 		// reset fd
 		rewind(cpu_fd);
