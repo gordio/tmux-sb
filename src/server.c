@@ -124,6 +124,9 @@ start_server(const char *file)
 
 		buf[BUF_SIZE - 1] = '\0'; // hard deny overflow
 		send(csock, buf, strlen(buf), 0);
+
+		// close client socket
+		close(csock);
 	}
 
 	deinit_sock(sock, &addr);

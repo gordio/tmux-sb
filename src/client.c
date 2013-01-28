@@ -52,6 +52,8 @@ client(void)
 
 	int len;
 	len = recv(sock, buf, BUF_SIZE - 1, 0);
+
+	// close receive socket.
 	close(sock);
 
 	buf[BUF_SIZE - 1] = '\0'; // hard deny overflow
