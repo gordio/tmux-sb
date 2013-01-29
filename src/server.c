@@ -32,20 +32,20 @@ inline static FILE * open_file(char *name);
 void
 start_server(const char *file)
 {
-	int sock, csock;
+	int ssock, csock;
 	struct sockaddr_un addr;
 	char *buf;
 	socklen_t addr_len;
 
 	// mem
 	FILE *ram_fd = NULL;
-	unsigned int memTotal, memFree, memBuffed, memCached, memPrc;
+	unsigned int mem_total, mem_free, mem_buffered, mem_cached, mem_prc;
 	// swap
 	struct sysinfo sysInfo;
-	unsigned long swpFree, swpTotal, swpPrc;
+	unsigned long swp_free, swp_total, swp_prc;
 	// cpu
 	FILE *cpu_fd = NULL;
-	unsigned long int a[9], b[9], work_over_period, total_over_period;
+	unsigned long int a[9], b[9], work_period, total_period;
 	int cpu_prc = 0;
 
 
@@ -56,12 +56,13 @@ start_server(const char *file)
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, file, (sizeof addr.sun_path) - 1);
 
-	sock = init_sock(&addr);
+	ssock = init_sock(&addr);
 
 	ram_fd = open_file("/proc/meminfo");
 	cpu_fd = open_file("/proc/stat");
 
-	// fix empty
+
+	// get "old" values
 	if (7 != fscanf(cpu_fd, "cpu  %lu %lu %lu %lu %lu %lu %lu", &b[0], &b[1], &b[2], &b[3], &b[4], &b[5], &b[6])) {
 		errx(1, "Fail parse cpu stat.");
 	} else {
@@ -78,7 +79,7 @@ start_server(const char *file)
 		addr_len = sizeof addr;
 
 		// wait connection
-		if (-1 == (csock = accept(sock, (struct sockaddr *) &addr, &addr_len))) {
+		if (-1 == (csock = accept(ssock, (struct sockaddr *) &addr, &addr_len))) {
 			errx(1, "Accept error %i: %s", errno, strerror(errno));
 		}
 
@@ -91,9 +92,9 @@ start_server(const char *file)
 		// total
 		a[8] = a[7] + a[3] + a[4] + a[5] + a[6];
 		// periods
-		work_over_period = a[7] - b[7];
-		total_over_period = a[8] - b[8];
-		cpu_prc = ((float)work_over_period / total_over_period) * 100.0;
+		work_period = a[7] - b[7];
+		total_period = a[8] - b[8];
+		cpu_prc = ((float)work_period / total_period) * 100.0;
 		// min/max value
 		cpu_prc = MIN(100, MAX(0, cpu_prc));
 		// a -> b
@@ -104,13 +105,13 @@ start_server(const char *file)
 		setbuf(cpu_fd, NULL);
 
 		// memory
-		if (1 != fscanf(ram_fd, "MemTotal: %u kB\n", &memTotal) ||
-			1 != fscanf(ram_fd, "MemFree: %u kB\n", &memFree) ||
-			1 != fscanf(ram_fd, "Buffers: %u kB\n", &memBuffed) ||
-			1 != fscanf(ram_fd, "Cached: %u kB\n", &memCached)) {
+		if (1 != fscanf(ram_fd, "MemTotal: %u kB\n", &mem_total) ||
+			1 != fscanf(ram_fd, "MemFree: %u kB\n", &mem_free) ||
+			1 != fscanf(ram_fd, "Buffers: %u kB\n", &mem_buffered) ||
+			1 != fscanf(ram_fd, "Cached: %u kB\n", &mem_cached)) {
 			errx(-1, "Fail parse mem file.");
 		}
-		memPrc = (memFree + memCached) / (memTotal / 100);
+		mem_prc = (mem_free + mem_cached) / (mem_total / 100);
 
 		rewind(ram_fd);
 		setbuf(ram_fd, NULL);
@@ -118,19 +119,20 @@ start_server(const char *file)
 		// swap
 		sysinfo(&sysInfo);
 
-		// if swap exist (exclude divide by zero)
 		if (sysInfo.totalswap != 0) {
-			swpTotal = sysInfo.totalswap * sysInfo.mem_unit;
-			swpFree = sysInfo.freeswap * sysInfo.mem_unit;
-			swpPrc = swpFree / (swpTotal / 100);
+			// swap exist
+			swp_total = sysInfo.totalswap * sysInfo.mem_unit;
+			swp_free = sysInfo.freeswap * sysInfo.mem_unit;
+			swp_prc = swp_free / (swp_total / 100);
 
 			snprintf(buf, BUF_SIZE - 1,
 					"CPU:%3.u%% #[fg=green]|#[fg=default] MEM:%3.0i%% SWAP:%2.1lu%%",
-					cpu_prc, 100 - memPrc, 100 - swpPrc);
+					cpu_prc, 100 - mem_prc, 100 - swp_prc);
 		} else {
+			// no swap (exclude divide by zero)
 			snprintf(buf, BUF_SIZE - 1,
 					"CPU:%3.u%% #[fg=green]|#[fg=default] MEM:%3.0i%%",
-					cpu_prc, 100 - memPrc);
+					cpu_prc, 100 - mem_prc);
 		}
 
 		buf[BUF_SIZE - 1] = '\0'; // hard deny overflow
@@ -140,7 +142,7 @@ start_server(const char *file)
 		close(csock);
 	}
 
-	deinit_sock(sock, &addr);
+	deinit_sock(ssock, &addr);
 
 	fclose(cpu_fd);
 	fclose(ram_fd);
@@ -163,7 +165,7 @@ init_sock(struct sockaddr_un *addr)
 	}
 
 	// Listening
-	if (-1 == listen(sock, LISTEN_BACKLOG)) {
+	if (-1 == listen(sock, CLIENTS_QUEUE)) {
 		errx(1, "Can't list socket: %s", strerror(errno));
 	}
 

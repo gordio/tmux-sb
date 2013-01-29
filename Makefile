@@ -1,6 +1,5 @@
 #!/usr/bin/make -f
 
-#PROJNAME := $(notdir $(PWD))
 PROJNAME := "tmux-sb"
 CFILES   := $(wildcard src/*.c)
 OBJECTS  := $(CFILES:.c=.o)
@@ -19,31 +18,32 @@ CFLAGS += -DVERSION=\"$(VERSION)\"
 
 
 .SUFFIXES: .c .h .o
-.PHONY: all clear clean install uninstall
+.PHONY: all debug tests clear clean install uninstall
 
-all: $(PROJNAME)
+all: ${PROJNAME}
 
 debug: clean
 	@CFLAGS+=-g make
 
-$(PROJNAME): $(OBJECTS)
-	@echo -e "\033[1;32m LINK\033[0m ${PROJNAME}"
-	@$(CC) $(LDFLAGS) -o ${PROJNAME} $(OBJECTS)
+${PROJNAME}: ${OBJECTS}
+	@printf "\033[1;32m LINK\033[0m ${PROJNAME}\n"
+	@${CC} ${LDFLAGS} -o ${PROJNAME} ${OBJECTS}
 
 %.o: %.c %.h
-	@echo -e "\033[1m   CC\033[0m $< -> $@"
-	@$(CC) $(CFLAGS) -c -o $@ $<
+	@printf "\033[1m   CC\033[0m $< -> $@\n"
+	@${CC} ${CFLAGS} -c -o $@ $<
 
 clean:
-	@echo -e "\033[1;31m   RM\033[0m" $(OBJECTS)
-	@rm -f $(OBJECTS)
+	@printf "\033[1;31m   RM\033[0m ${OBJECTS}\n"
+	@rm -f ${OBJECTS}
+	@make -C tests/ clean
 
 clear: clean
-	@echo -e "\033[1;31m   RM\033[0m" "${PROJNAME}"
+	@printf "\033[1;31m   RM\033[0m ${PROJNAME}\n"
 	@rm -f ${PROJNAME}
 
 install: all
-	install -m 755 ${PROJNAME} "$(PREFIX)/bin/"
+	install -m 755 ${PROJNAME} "${PREFIX}/bin/"
 
 uninstall: all
-	rm "$(PREFIX)/bin/$(PROJNAME)"
+	rm "${PREFIX}/bin/${PROJNAME}"

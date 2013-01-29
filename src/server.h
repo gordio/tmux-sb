@@ -1,7 +1,7 @@
 #ifndef __SERVER_H
 #define __SERVER_H
 
-#define LISTEN_BACKLOG 5
+#define CLIENTS_QUEUE 1
 
 void start_server(const char *file);
 
