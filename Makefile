@@ -25,6 +25,9 @@ all: ${PROJNAME}
 debug: clean
 	@CFLAGS+=-g make
 
+tests:
+	@make -C tests/
+
 ${PROJNAME}: ${OBJECTS}
 	@printf "\033[1;32m LINK\033[0m ${PROJNAME}\n"
 	@${CC} ${LDFLAGS} -o ${PROJNAME} ${OBJECTS}
