@@ -56,12 +56,14 @@ start_server(const char *file)
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, file, (sizeof addr.sun_path) - 1);
 
+	// Create server socket
 	sock = init_sock(&addr);
 
+	// Open files
 	ram_fd = open_file("/proc/meminfo");
 	cpu_fd = open_file("/proc/stat");
 
-	// fix empty
+	// Fix empty
 	if (7 != fscanf(cpu_fd, "cpu  %lu %lu %lu %lu %lu %lu %lu", &b[0], &b[1], &b[2], &b[3], &b[4], &b[5], &b[6])) {
 		errx(1, "Fail parse cpu stat.");
 	} else {
@@ -77,7 +79,7 @@ start_server(const char *file)
 	while (true) {
 		addr_len = sizeof addr;
 
-		// wait connection
+		// Wait connecting...
 		if (-1 == (csock = accept(sock, (struct sockaddr *) &addr, &addr_len))) {
 			errx(1, "Accept error %i: %s", errno, strerror(errno));
 		}
@@ -86,24 +88,28 @@ start_server(const char *file)
 		if (7 != fscanf(cpu_fd, "cpu  %lu %lu %lu %lu %lu %lu %lu", &a[0], &a[1], &a[2], &a[3], &a[4], &a[5], &a[6])) {
 			errx(1, "Fail parse cpu stat.");
 		}
-		// work (user + nice + system)
+		// Work (user + nice + system)
 		a[7] = a[0] + a[1] + a[2];
-		// total
+		// Total
 		a[8] = a[7] + a[3] + a[4] + a[5] + a[6];
-		// periods
+		// Periods
 		work_over_period = a[7] - b[7];
 		total_over_period = a[8] - b[8];
+
+		// Calc CPU load
 		cpu_prc = ((float)work_over_period / total_over_period) * 100.0;
-		// min/max value
+
+		// Min = 0, max = 100
 		cpu_prc = MIN(100, MAX(0, cpu_prc));
+
 		// a -> b
 		memcpy(b, a, sizeof b);
 
-		// reset fd
+		// Reset fd
 		rewind(cpu_fd);
 		setbuf(cpu_fd, NULL);
 
-		// memory
+		// Memory
 		if (1 != fscanf(ram_fd, "MemTotal: %u kB\n", &memTotal) ||
 			1 != fscanf(ram_fd, "MemFree: %u kB\n", &memFree) ||
 			1 != fscanf(ram_fd, "Buffers: %u kB\n", &memBuffed) ||
@@ -115,7 +121,7 @@ start_server(const char *file)
 		rewind(ram_fd);
 		setbuf(ram_fd, NULL);
 
-		// swap
+		// Swap
 		sysinfo(&sysInfo);
 
 		// if swap exist (exclude divide by zero)
@@ -125,26 +131,30 @@ start_server(const char *file)
 			swpPrc = swpFree / (swpTotal / 100);
 
 			snprintf(buf, BUF_SIZE - 1,
-					"CPU:%3.u%% #[fg=green]|#[fg=default] MEM:%3.0i%% SWAP:%2.1lu%%",
+					"CPU:%3.1u%% #[fg=green]|#[fg=default] MEM:%3.1i%% SWAP:%2.1lu%%",
 					cpu_prc, 100 - memPrc, 100 - swpPrc);
 		} else {
 			snprintf(buf, BUF_SIZE - 1,
-					"CPU:%3.u%% #[fg=green]|#[fg=default] MEM:%3.0i%%",
+					"CPU:%3.1u%% #[fg=green]|#[fg=default] MEM:%3.1i%%",
 					cpu_prc, 100 - memPrc);
 		}
 
 		buf[BUF_SIZE - 1] = '\0'; // hard deny overflow
+
 		send(csock, buf, strlen(buf), 0);
 
-		// close client socket
+		// Close client socket
 		close(csock);
 	}
 
+	// Close server socket
 	deinit_sock(sock, &addr);
 
+	// Close files
 	fclose(cpu_fd);
 	fclose(ram_fd);
 }
+
 
 static int
 init_sock(struct sockaddr_un *addr)
@@ -170,12 +180,14 @@ init_sock(struct sockaddr_un *addr)
 	return sock;
 }
 
+
 static void
 deinit_sock(int sock, struct sockaddr_un *addr)
 {
 	close(sock);
 	unlink(addr->sun_path);
 }
+
 
 inline static FILE *
 open_file(char *name)
