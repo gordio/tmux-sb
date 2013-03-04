@@ -9,6 +9,7 @@
 #include <sys/sysinfo.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <errno.h>
 #include <err.h>
 
@@ -27,13 +28,16 @@
 static int init_sock(struct sockaddr_un *addr);
 static void deinit_sock(int sock, struct sockaddr_un *addr);
 inline static FILE * open_file(char *name);
+static void signal_handler(int signal);
 
+
+static int sock;
+static struct sockaddr_un addr;
 
 void
 start_server(const char *file)
 {
-	int sock, csock;
-	struct sockaddr_un addr;
+	int csock;
 	char *buf;
 	socklen_t addr_len;
 
@@ -58,6 +62,16 @@ start_server(const char *file)
 
 	// Create server socket
 	sock = init_sock(&addr);
+
+	// Connect signals
+	signal(SIGHUP, signal_handler);
+	signal(SIGINT, signal_handler);  // 2 Terminal interrupt signal. (receive ^C)
+	signal(SIGABRT, signal_handler); // 6 Process abort signal.
+	signal(SIGSEGV, signal_handler); // Invalid memory reference.
+	signal(SIGTERM, signal_handler); // 15 Termination signal.
+	signal(SIGFPE, signal_handler);  // Erroneous arithmetic operation.
+	signal(SIGILL, signal_handler);  // Illegal instruction.
+	signal(SIGQUIT, signal_handler); // Termination signal.
 
 	// Open files
 	ram_fd = open_file("/proc/meminfo");
@@ -200,4 +214,19 @@ open_file(char *name)
 	}
 
 	return fd;
+}
+
+
+static void
+signal_handler(int signal)
+{
+	switch (signal) {
+		case SIGHUP:
+			// TODO: Reread config.
+			break;
+
+		default:
+			deinit_sock(sock, &addr);
+			break;
+	}
 }
