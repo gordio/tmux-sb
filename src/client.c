@@ -34,12 +34,12 @@ client(void)
 	int cur_retr = 0;
 	while (cur_retr < CLIENT_RET_COUNT) {
 		if (-1 == connect(sock, (struct sockaddr *) &addr, sizeof addr)) {
-			if (cur_retr < CLIENT_RET_COUNT) {
+			if (cur_retr + 1 < CLIENT_RET_COUNT) {
 				// have retry count - only show error
 				fprintf(stderr, "Can't connect. Retry %i/%i\n", cur_retr + 1, CLIENT_RET_COUNT);
 			} else {
 				// error, exit
-				errx(1, "Fatal. Can't connect: %s", strerror(errno));
+				errx(1, "Fatal. Can't connect: %s (Try remove '%s')", strerror(errno), SOCKET_NAME);
 			}
 		} else {
 			// connect success
