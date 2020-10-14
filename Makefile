@@ -27,19 +27,23 @@ debug: clean
 	@CFLAGS+=-g make
 
 $(PROJNAME): $(OBJECTS)
-	@echo -e "\033[1;32m LINK\033[0m ${PROJNAME}"
+	@echo "\033[1;32m LINK\033[0m ${PROJNAME}"
 	@$(CC) $(LDFLAGS) -o ${PROJNAME} $(OBJECTS)
 
+%.o: %.c
+	@echo "\033[1m   CC\033[0m" $@ "<-" $<
+	@$(CC) $(CFLAGS) -c -o $@ $<
+
 %.o: %.c %.h
-	@echo -e "\033[1m   CC\033[0m $< -> $@"
+	@echo "\033[1m   CC\033[0m" $@ "<-" $<
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	@echo -e "\033[1;31m   RM\033[0m" $(OBJECTS)
+	@echo "\033[1;31m   RM\033[0m" $(OBJECTS)
 	@rm -f $(OBJECTS)
 
 clear: clean
-	@echo -e "\033[1;31m   RM\033[0m" "${PROJNAME}"
+	@echo "\033[1;31m   RM\033[0m" "${PROJNAME}"
 	@rm -f ${PROJNAME}
 
 install: all
